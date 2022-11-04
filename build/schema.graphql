@@ -1,0 +1,110 @@
+type Store @entity {
+  id: ID!
+  owner: User
+  arbiter: User
+  #
+  name: String
+  category: Category
+  terms: String
+  phone: String
+  email: String
+  website: String
+  description: String
+  logo: String
+  cover: String
+  tags: [Tag!]
+  createdAt: String
+  updatedAt: String
+  #
+  items: [StoreItem!] @derivedFrom(field: "store")
+  orders: [Order!] @derivedFrom(field: "store")
+  #
+}
+
+type StoreItem @entity {
+  id: ID!
+  itemID: String!
+  price: BigInt
+  status: String
+  title: String
+  description: String
+  images: [String!]
+  createdAt: Int
+  updatedAt: Int
+  tags: [Tag!]
+  store: Store!
+  #
+  orders: [Order!] @derivedFrom(field: "item")
+}
+
+type Order @entity {
+  id: ID!
+  orderID: String!
+  store: Store!
+  item: StoreItem!
+  buyer: User
+  seller: User
+  price: BigInt
+  #
+  status: OrderStatus
+  resolution: String
+  createdAt: String
+  updatedAt: String
+}
+
+type Review @entity {
+  id: ID!
+  reviewID: String!
+  store: Store!
+  item: StoreItem!
+  reviewer: User
+  rating: String
+  comment: String
+  createdAt: String
+  updatedAt: String
+}
+
+type Category @entity {
+  id: ID!
+  name: String!
+  stores: [Store!] @derivedFrom(field: "category")
+}
+
+type Tag @entity {
+  id: ID!
+  name: String!
+  stores: [Store!] @derivedFrom(field: "tags")
+  items: [StoreItem!] @derivedFrom(field: "tags")
+}
+
+type User @entity {
+  id: ID!
+  buy_orders: [Order!] @derivedFrom(field: "buyer")
+  sell_orders: [Order!] @derivedFrom(field: "seller")
+  stores: [Store!] @derivedFrom(field: "owner")
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  DISPUTED
+  RESOLVED
+}
+
+type _Schema_
+  @fulltext(
+    name: "fulltext"
+    language: en
+    algorithm: rank
+    include: [
+      { entity: "Store", fields: [{ name: "name" }, { name: "description" }] }
+      {
+        entity: "StoreItem"
+        fields: [{ name: "title" }, { name: "description" }]
+      }
+      { entity: "Category", fields: [{ name: "name" }] }
+      { entity: "Tag", fields: [{ name: "name" }] }
+      { entity: "User", fields: [{ name: "id" }] }
+    ]
+  )

@@ -1,0 +1,27 @@
+specVersion: 0.0.4
+schema:
+  file: schema.graphql
+features:
+  - fullTextSearch
+dataSources:
+  - kind: near
+    name: Stores
+    network: near-testnet
+    source:
+      startBlock: 103664000
+      accounts:
+        suffixes:
+          - dev-20221028024743-81046331272148
+    mapping:
+      apiVersion: 0.0.6
+      language: wasm/assemblyscript
+      entities:
+        - Store
+        - StoreItem
+        - Order
+        - Category
+        - Customer
+        - Seller
+      receiptHandlers:
+        - handler: handleReceipt
+      file: Stores/Stores.wasm
