@@ -8,10 +8,10 @@ dataSources:
     name: Stores
     network: near-testnet
     source:
-      startBlock: 103664000
+      startBlock: 105275000
       accounts:
         suffixes:
-          - dev-20221028024743-81046331272148
+          - deerm.testnet
     mapping:
       apiVersion: 0.0.6
       language: wasm/assemblyscript
