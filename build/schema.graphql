@@ -86,6 +86,7 @@ type User @entity {
 
 enum OrderStatus {
   PENDING
+  SHIPPED
   COMPLETED
   CANCELLED
   DISPUTED

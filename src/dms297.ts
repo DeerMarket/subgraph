@@ -317,6 +317,36 @@ export function handleDMS297Event(
       .toString();
 
     order.save();
+  } else if (event == "order_shipped") {
+    if (data.kind != JSONValueKind.OBJECT) {
+      return;
+    }
+    let entry = data.toObject();
+
+    let orderIdEntry = entry.mustGet("order_id");
+    let orderId: string;
+    if (orderIdEntry.kind == JSONValueKind.STRING) {
+      orderId = orderIdEntry.toString();
+    } else {
+      return;
+    }
+
+    const OrderId = cyrb53(storeId + ":o:" + orderId).toString();
+    let order = Order.load(OrderId);
+
+    if (!order) {
+      log.warning("Order {} not found", [orderId]);
+      return;
+    }
+
+    order.status = "SHIPPED";
+    order.updatedAt = BigInt.fromString(
+      receipt.block.header.timestampNanosec.toString()
+    )
+      .div(BigInt.fromString("1000000000"))
+      .toString();
+
+    order.save();
   } else if (event == "order_cancel") {
     if (data.kind != JSONValueKind.OBJECT) {
       return;
