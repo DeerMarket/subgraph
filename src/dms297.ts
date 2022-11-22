@@ -533,7 +533,7 @@ export function handleDMS297Event(
     let resEntry = entry.get("resolution");
     if (resEntry) {
       if (resEntry.kind == JSONValueKind.STRING) {
-        order.resolution = resEntry.data.toString();
+        order.resolution = resEntry.toString();
       }
     }
 

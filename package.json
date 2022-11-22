@@ -5,6 +5,7 @@
     "codegen": "graph codegen",
     "build": "graph build",
     "deploy": "graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ --access-token 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 dino-bear/deer",
+    "devdeploy": "graph deploy --node https://api.thegraph.com/deploy/ --ipfs https://api.thegraph.com/ipfs/ --access-token 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 dino-bear/deertest",    
     "all": "yarn codegen && yarn build && yarn deploy"
   },
   "dependencies": {
