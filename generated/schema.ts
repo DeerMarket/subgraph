@@ -313,6 +313,41 @@ export class Store extends Entity {
       this.set("orders", Value.fromStringArray(<Array<string>>value));
     }
   }
+
+  get total_items(): i32 {
+    let value = this.get("total_items");
+    return value!.toI32();
+  }
+
+  set total_items(value: i32) {
+    this.set("total_items", Value.fromI32(value));
+  }
+
+  get total_orders(): i32 {
+    let value = this.get("total_orders");
+    return value!.toI32();
+  }
+
+  set total_orders(value: i32) {
+    this.set("total_orders", Value.fromI32(value));
+  }
+
+  get total_sales(): BigInt | null {
+    let value = this.get("total_sales");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set total_sales(value: BigInt | null) {
+    if (!value) {
+      this.unset("total_sales");
+    } else {
+      this.set("total_sales", Value.fromBigInt(<BigInt>value));
+    }
+  }
 }
 
 export class StoreItem extends Entity {
@@ -499,6 +534,15 @@ export class StoreItem extends Entity {
     } else {
       this.set("orders", Value.fromStringArray(<Array<string>>value));
     }
+  }
+
+  get total_orders(): i32 {
+    let value = this.get("total_orders");
+    return value!.toI32();
+  }
+
+  set total_orders(value: i32) {
+    this.set("total_orders", Value.fromI32(value));
   }
 }
 
@@ -1036,6 +1080,68 @@ export class User extends Entity {
       this.unset("stores");
     } else {
       this.set("stores", Value.fromStringArray(<Array<string>>value));
+    }
+  }
+
+  get total_sell_orders(): i32 {
+    let value = this.get("total_sell_orders");
+    return value!.toI32();
+  }
+
+  set total_sell_orders(value: i32) {
+    this.set("total_sell_orders", Value.fromI32(value));
+  }
+
+  get total_buy_orders(): i32 {
+    let value = this.get("total_buy_orders");
+    return value!.toI32();
+  }
+
+  set total_buy_orders(value: i32) {
+    this.set("total_buy_orders", Value.fromI32(value));
+  }
+
+  get total_active_sell_orders(): i32 {
+    let value = this.get("total_active_sell_orders");
+    return value!.toI32();
+  }
+
+  set total_active_sell_orders(value: i32) {
+    this.set("total_active_sell_orders", Value.fromI32(value));
+  }
+
+  get total_active_buy_orders(): i32 {
+    let value = this.get("total_active_buy_orders");
+    return value!.toI32();
+  }
+
+  set total_active_buy_orders(value: i32) {
+    this.set("total_active_buy_orders", Value.fromI32(value));
+  }
+
+  get total_stores(): i32 {
+    let value = this.get("total_stores");
+    return value!.toI32();
+  }
+
+  set total_stores(value: i32) {
+    this.set("total_stores", Value.fromI32(value));
+  }
+
+  get total_sales(): BigInt | null {
+    let value = this.get("total_sales");
+    if (!value || value.kind == ValueKind.NULL) {
+      return null;
+    } else {
+      return value.toBigInt();
+    }
+  }
+
+  set total_sales(value: BigInt | null) {
+    if (!value) {
+      this.unset("total_sales");
+    } else {
+      this.set("total_sales", Value.fromBigInt(<BigInt>value));
     }
   }
 }

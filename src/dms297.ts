@@ -106,8 +106,19 @@ export function handleDMS297Event(
       }
     } // end for
 
+    if (event == "store_create") {
+      store.total_items = 0;
+      store.total_orders = 0;
+      store.total_sales = BigInt.fromI32(0);
+    }
     // save the store entity
     store.save();
+
+    // increment the user store count
+    if (event == "store_create") {
+      owner.total_stores = owner.total_stores + 1;
+      owner.save();
+    }
   } else if (event == "item_create" || event == "item_update") {
     if (data.kind != JSONValueKind.OBJECT) {
       return;
@@ -129,7 +140,7 @@ export function handleDMS297Event(
       return;
     }
 
-    const ItemId = cyrb53(storeId + ":i:" + itemId).toString();
+    const ItemId = storeId + ":i:" + itemId;
     let item = StoreItem.load(ItemId);
     if (!item) {
       item = new StoreItem(ItemId);
@@ -192,8 +203,18 @@ export function handleDMS297Event(
       }
     } // end for
 
+    if(event == "item_create") {
+      item.total_orders = 0;
+    }
+
     // save the item entity
     item.save();
+
+    if (event == "item_create") {
+      // increment the store item count
+      store.total_items = store.total_items + 1;
+      store.save();
+    }
   } else if (event == "item_delete") {
     if (data.kind != JSONValueKind.OBJECT) {
       return;
@@ -210,7 +231,7 @@ export function handleDMS297Event(
       return;
     }
 
-    const ItemId = cyrb53(storeId + ":i:" + itemId).toString();
+    const ItemId = storeId + ":i:" + itemId;
     let item = StoreItem.load(ItemId);
     if (!item) {
       log.warning("Item {} not found", [ItemId]);
@@ -219,6 +240,15 @@ export function handleDMS297Event(
 
     item.status = "Deleted";
     item.save();
+
+    // decrement the store item count
+    let store = Store.load(storeId);
+    if (!store) {
+      log.warning("Store {} not found", [storeId]);
+      return;
+    }
+    store.total_items = store.total_items - 1;
+    store.save();
   } else if (event == "item_buy") {
     if (data.kind != JSONValueKind.OBJECT) {
       return;
@@ -250,14 +280,14 @@ export function handleDMS297Event(
       return;
     }
 
-    const ItemId = cyrb53(storeId + ":i:" + itemId).toString();
+    const ItemId = storeId + ":i:" + itemId;
     let item = StoreItem.load(ItemId);
     if (!item) {
       log.warning("Item {} not found", [ItemId]);
       return;
     }
 
-    const OrderId = cyrb53(storeId + ":o:" + orderId).toString();
+    const OrderId = storeId + ":o:" + orderId;
     let order = new Order(OrderId);
 
     order.orderID = orderId;
@@ -287,6 +317,24 @@ export function handleDMS297Event(
     order.updatedAt = order.createdAt;
 
     order.save();
+
+    // increment the stores stats
+    store.total_orders = store.total_orders + 1;
+    store.save();
+    // increment the items stats
+    item.total_orders = item.total_orders + 1;
+    item.save();
+    // increment the buyers stats
+    buyer.total_buy_orders = buyer.total_buy_orders + 1;
+    buyer.total_active_buy_orders = buyer.total_active_buy_orders + 1;
+    buyer.save();
+    // increment the sellers stats
+    if (store.owner) {
+      let seller = handleUser(store.owner!);
+      seller.total_sell_orders = seller.total_sell_orders + 1;
+      seller.total_active_sell_orders = seller.total_active_sell_orders+ 1;
+      seller.save();
+    }
   } else if (event == "order_complete") {
     if (data.kind != JSONValueKind.OBJECT) {
       return;
@@ -301,7 +349,7 @@ export function handleDMS297Event(
       return;
     }
 
-    const OrderId = cyrb53(storeId + ":o:" + orderId).toString();
+    const OrderId = storeId + ":o:" + orderId;
     let order = Order.load(OrderId);
 
     if (!order) {
@@ -317,6 +365,25 @@ export function handleDMS297Event(
       .toString();
 
     order.save();
+
+    // increment the stores sales
+    let store = Store.load(storeId);
+    if (!store) {
+      log.warning("Store {} not found", [storeId]);
+      return;
+    }
+    store.total_sales = store.total_sales!.plus(order.price!);
+    store.save();
+
+    // increment the users states
+    let buyer = handleUser(order.buyer!);
+    buyer.total_active_buy_orders = buyer.total_active_buy_orders -1;
+    buyer.save();
+
+    let seller = handleUser(order.seller!);
+    seller.total_active_sell_orders = seller.total_active_sell_orders - 1;
+    seller.total_sales = seller.total_sales!.plus(order.price!);
+    seller.save();
   } else if (event == "order_shipped") {
     if (data.kind != JSONValueKind.OBJECT) {
       return;
@@ -331,7 +398,7 @@ export function handleDMS297Event(
       return;
     }
 
-    const OrderId = cyrb53(storeId + ":o:" + orderId).toString();
+    const OrderId = storeId + ":o:" + orderId;
     let order = Order.load(OrderId);
 
     if (!order) {
@@ -361,7 +428,7 @@ export function handleDMS297Event(
       return;
     }
 
-    const OrderId = cyrb53(storeId + ":o:" + orderId).toString();
+    const OrderId = storeId + ":o:" + orderId;
     let order = Order.load(OrderId);
 
     if (!order) {
@@ -377,6 +444,33 @@ export function handleDMS297Event(
       .toString();
 
     order.save();
+
+    // decrement the stores stats
+    let store = Store.load(storeId);
+    if (!store) {
+      log.warning("Store {} not found", [storeId]);
+      return;
+    }
+    store.total_orders = store.total_orders - 1;
+    store.save();
+    // decrement the items stats
+    let item = StoreItem.load(order.item!);
+    if (!item) {
+      log.warning("Item {} not found", [order.item!]);
+      return;
+    }
+    item.total_orders = item.total_orders-1;
+    item.save();
+    // decrement the buyers stats
+    let buyer = handleUser(order.buyer!);
+    buyer.total_buy_orders = buyer.total_buy_orders - 1;
+    buyer.total_active_buy_orders = buyer.total_active_buy_orders - 1;
+    buyer.save();
+    // decrement the sellers stats
+    let seller = handleUser(order.seller!);
+    seller.total_sell_orders = seller.total_sell_orders - 1;
+    seller.total_active_sell_orders = seller.total_active_sell_orders - 1;
+    seller.save();
   } else if (event == "dispute_start") {
     if (data.kind != JSONValueKind.OBJECT) {
       return;
@@ -391,7 +485,7 @@ export function handleDMS297Event(
       return;
     }
 
-    const OrderId = cyrb53(storeId + ":o:" + orderId).toString();
+    const OrderId = storeId + ":o:" + orderId;
     let order = Order.load(OrderId);
 
     if (!order) {
@@ -421,7 +515,7 @@ export function handleDMS297Event(
       return;
     }
 
-    const OrderId = cyrb53(storeId + ":o:" + orderId).toString();
+    const OrderId = storeId + ":o:" + orderId;
     let order = Order.load(OrderId);
 
     if (!order) {
@@ -444,6 +538,28 @@ export function handleDMS297Event(
     }
 
     order.save();
+
+    // increment the stats
+    let store = Store.load(storeId);
+    if (!store) {
+      log.warning("Store {} not found", [storeId]);
+      return;
+    }
+    let buyer = handleUser(order.buyer!);
+    let seller = handleUser(order.seller!);
+    buyer.total_active_buy_orders = buyer.total_active_buy_orders - 1;
+    seller.total_active_sell_orders = seller.total_active_sell_orders - 1;
+
+    if (order.resolution == "SellerWon") {
+        store.total_sales = store.total_sales!.plus(order.price!);
+        seller.total_sales = seller.total_sales!.plus(order.price!);
+    } else if (order.resolution == "Draw") {
+        store.total_sales = store.total_sales!.plus(order.price!.div(BigInt.fromString("2")));
+        seller.total_sales = seller.total_sales!.plus(order.price!.div(BigInt.fromString("2")));
+    }
+    seller.save();
+    buyer.save();   
+    store.save();
   } else if (event == "review_create") {
     if (data.kind != JSONValueKind.OBJECT) {
       return;
@@ -483,14 +599,14 @@ export function handleDMS297Event(
       return;
     }
 
-    let ItemId = cyrb53(storeId + ":i:" + itemId).toString();
+    let ItemId = storeId + ":i:" + itemId;
     let item = StoreItem.load(ItemId);
     if (!item) {
       log.warning("Item {} not found", [ItemId]);
       return;
     }
 
-    let ReviewId = cyrb53(storeId + ":r:" + reviewId).toString();
+    let ReviewId = storeId + ":r:" + reviewId;
     let review = new Review(ReviewId);
 
     review.reviewID = reviewId;
@@ -519,6 +635,12 @@ function handleUser(id: string): User {
   // if account doesn't exist save new account
   if (!user) {
     user = new User(id);
+    user.total_buy_orders = 0;
+    user.total_sell_orders = 0;
+    user.total_active_buy_orders = 0;
+    user.total_active_sell_orders = 0;
+    user.total_stores = 0;
+    user.total_sales = BigInt.fromI32(0);
   }
   user.save();
   return user as User;
@@ -557,24 +679,4 @@ function handleTag(id: string): void {
   }
 
   tag.save();
-}
-
-// utils
-function cyrb53(str: string, seed: i32 = 0): i64 {
-  let h1: i32 = 0xdeadbeef ^ seed,
-    h2: i32 = 0x41c6ce57 ^ seed;
-  for (let i = 0, ch: i32; i < str.length; i++) {
-    ch = str.charCodeAt(i);
-    h1 = Math.imul(h1 ^ ch, 2654435761) as i32;
-    h2 = Math.imul(h2 ^ ch, 1597334677) as i32;
-  }
-
-  h1 =
-    (Math.imul(h1 ^ (h1 >>> 16), 2246822507) as i32) ^
-    (Math.imul(h2 ^ (h2 >>> 13), 3266489909) as i32);
-  h2 =
-    (Math.imul(h2 ^ (h2 >>> 16), 2246822507) as i32) ^
-    (Math.imul(h1 ^ (h1 >>> 13), 3266489909) as i32);
-
-  return 4294967296 * (2097151 & h2) + (h1 >>> 0);
 }

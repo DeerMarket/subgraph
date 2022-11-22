@@ -19,6 +19,9 @@ type Store @entity {
   items: [StoreItem!] @derivedFrom(field: "store")
   orders: [Order!] @derivedFrom(field: "store")
   #
+  total_items: Int
+  total_orders: Int
+  total_sales: BigInt
 }
 
 type StoreItem @entity {
@@ -35,6 +38,8 @@ type StoreItem @entity {
   store: Store!
   #
   orders: [Order!] @derivedFrom(field: "item")
+  #
+  total_orders: Int
 }
 
 type Order @entity {
@@ -82,6 +87,15 @@ type User @entity {
   buy_orders: [Order!] @derivedFrom(field: "buyer")
   sell_orders: [Order!] @derivedFrom(field: "seller")
   stores: [Store!] @derivedFrom(field: "owner")
+
+  # Stats
+  total_sell_orders: Int
+  total_buy_orders: Int
+  total_active_sell_orders: Int
+  total_active_buy_orders: Int
+  total_stores: Int
+  total_sales: BigInt
+  
 }
 
 enum OrderStatus {
