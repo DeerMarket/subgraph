@@ -4,6 +4,7 @@ import {
   JSONValueKind,
   log,
   near,
+  store as storage,
 } from "@graphprotocol/graph-ts";
 import {
   Category,
@@ -203,7 +204,7 @@ export function handleDMS297Event(
       }
     } // end for
 
-    if(event == "item_create") {
+    if (event == "item_create") {
       item.total_orders = 0;
     }
 
@@ -332,7 +333,7 @@ export function handleDMS297Event(
     if (store.owner) {
       let seller = handleUser(store.owner!);
       seller.total_sell_orders = seller.total_sell_orders + 1;
-      seller.total_active_sell_orders = seller.total_active_sell_orders+ 1;
+      seller.total_active_sell_orders = seller.total_active_sell_orders + 1;
       seller.save();
     }
   } else if (event == "order_complete") {
@@ -377,7 +378,7 @@ export function handleDMS297Event(
 
     // increment the users states
     let buyer = handleUser(order.buyer!);
-    buyer.total_active_buy_orders = buyer.total_active_buy_orders -1;
+    buyer.total_active_buy_orders = buyer.total_active_buy_orders - 1;
     buyer.save();
 
     let seller = handleUser(order.seller!);
@@ -454,12 +455,12 @@ export function handleDMS297Event(
     store.total_orders = store.total_orders - 1;
     store.save();
     // decrement the items stats
-    let item = StoreItem.load(order.item!);
+    let item = StoreItem.load(order.item ? order.item : "");
     if (!item) {
-      log.warning("Item {} not found", [order.item!]);
+      log.warning("Item {} not found", [order.item]);
       return;
     }
-    item.total_orders = item.total_orders-1;
+    item.total_orders = item.total_orders - 1;
     item.save();
     // decrement the buyers stats
     let buyer = handleUser(order.buyer!);
@@ -551,14 +552,18 @@ export function handleDMS297Event(
     seller.total_active_sell_orders = seller.total_active_sell_orders - 1;
 
     if (order.resolution == "SellerWon") {
-        store.total_sales = store.total_sales!.plus(order.price!);
-        seller.total_sales = seller.total_sales!.plus(order.price!);
+      store.total_sales = store.total_sales!.plus(order.price!);
+      seller.total_sales = seller.total_sales!.plus(order.price!);
     } else if (order.resolution == "Draw") {
-        store.total_sales = store.total_sales!.plus(order.price!.div(BigInt.fromString("2")));
-        seller.total_sales = seller.total_sales!.plus(order.price!.div(BigInt.fromString("2")));
+      store.total_sales = store.total_sales!.plus(
+        order.price!.div(BigInt.fromString("2"))
+      );
+      seller.total_sales = seller.total_sales!.plus(
+        order.price!.div(BigInt.fromString("2"))
+      );
     }
     seller.save();
-    buyer.save();   
+    buyer.save();
     store.save();
   } else if (event == "review_create") {
     if (data.kind != JSONValueKind.OBJECT) {
@@ -626,6 +631,40 @@ export function handleDMS297Event(
     review.reviewer = reviewer.id;
 
     review.save();
+  } else if (event == "store_delete") {
+    let store = Store.load(storeId);
+    if (!store) {
+      log.warning("Store {} not found", [storeId]);
+      return;
+    }
+
+    // delete all the items
+    let items = store.items ? (store.items as string[]) : [];
+    for (let i: i32 = 0; i < items.length; i++) {
+      let item = StoreItem.load(items[i]);
+      if (item) {
+        storage.remove("StoreItem", item.id);
+      }
+    }
+
+    // delete all the orders
+    let orders = store.orders ? (store.orders as string[]) : [];
+    for (let i: i32 = 0; i < orders.length; i++) {
+      let order = Order.load(orders[i]);
+      if (order) {
+        storage.remove("Order", order.id);
+      }
+    }
+
+    // // TODO: delete all the reviews
+
+    // update the user stats
+    let user = handleUser(store.owner ? (store.owner as string) : "");
+    user.total_stores = user.total_stores - 1;
+    user.save();
+
+    // delete the store
+    storage.remove("Store", store.id);
   }
 }
 
