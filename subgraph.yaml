@@ -8,10 +8,10 @@ dataSources:
     name: Stores
     network: near-testnet
     source:
-      startBlock: 105815406
+      startBlock: 105848396
       accounts:
         suffixes:
-          - dm5.testnet
+          - dm7.testnet
     mapping:
       apiVersion: 0.0.6
       language: wasm/assemblyscript
