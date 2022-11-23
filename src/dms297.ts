@@ -239,8 +239,17 @@ export function handleDMS297Event(
       return;
     }
 
-    item.status = "Deleted";
-    item.save();
+    let orders = item.orders ? (item.orders as string[]) : [];
+    for (let i: i32 = 0; i < orders.length; i++) {
+      let order = Order.load(orders[i]);
+      if (order) {
+        storage.remove("Order", order.id);
+      }
+    }
+
+    // TODO: remove item reviews 
+
+    storage.remove("StoreItem", item.id);
 
     // decrement the store item count
     let store = Store.load(storeId);
